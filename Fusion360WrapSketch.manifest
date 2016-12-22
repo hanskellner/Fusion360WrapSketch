@@ -1,0 +1,13 @@
+{
+	"autodeskProduct":	"Fusion360",
+	"type":	"addin",
+	"id":	"7dd8fd5b-143e-4f0d-adf6-f0c43e27c032",
+	"author":	"Hans Kellner",
+	"description":	{
+		"":	"Wrap 2D sketch curves around a cylinder"
+	},
+	"version":	"1.0.0",
+	"runOnStartup":	false,
+	"supportedOS":	"windows|mac",
+	"editEnabled":	true
+}

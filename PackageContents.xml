@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ApplicationPackage SchemaVersion="1.0"
+    AutodeskProduct="Fusion360"
+    Name="Wrap Sketch"
+    Description="Wrap 2D sketch curves around a cylinder"
+    AppVersion="1.0.0"
+    ProductType="Application"
+    Author="Hans Kellner"
+    ProductCode="{41669310-B681-450A-84F2-3628CAF55F42}"
+    Icon="./Resource/32x32.png"
+    HelpFile="./Resources/Help.html">
+  <CompanyDetails Name="Hans Kellner" Url="http://github.com/hanskellner" Email="hans@hanskellner.com" />
+  <Components>
+    <RuntimeRequirements OS="Win64|MacOS" Platform="Fusion360" SeriesMin="1.6.601" SeriesMax="1.6.601" />
+	<ComponentEntry AppName="Fusion360WrapSketch" Version="1.0.0" ModuleName="./Fusion360WrapSketch.py"/>
+  </Components>
+</ApplicationPackage>

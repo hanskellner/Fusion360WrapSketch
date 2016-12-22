@@ -1,0 +1,9 @@
+{
+	"version":	"1.0.0",
+	"author":	"Hans Kellner",
+	"description":	"Wrap 2D sketch curves around a cylinder",
+	"companyDetailsName":	"Hans Kellner",
+	"companyDetailsUrl":	"http://github.com/hanskellner",
+	"companyDetailsEmail":	"hans@hanskellner.com",
+	"enabled":	false
+}
