@@ -353,7 +353,7 @@ def run(context):
         cmdDef = ui.commandDefinitions.itemById(commandId)
         if not cmdDef:
             cmdDef = ui.commandDefinitions.addButtonDefinition(commandId, commandName, commandDescription, commandResources)
-            commandDef.toolClipFilename = commandToolClip
+            cmdDef.toolClipFilename = commandToolClip
 
         # Add command created event
         onCommandCreated = MyCommandCreatedHandler()
