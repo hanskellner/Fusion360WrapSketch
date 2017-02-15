@@ -1,9 +1,8 @@
-# ![Fusion360WrapSketch](./resources/32x32.png) Fusion 360 Wrap Sketch
+# ![Fusion360WrapSketch](./Resources/Fusion360WrapSketch/32x32.png) Fusion 360 Wrap Sketch
 
 This script is used to wrap 2D sketch curves around a cylinder.
 
-![Image of Fusion360WrapSketch]
-(./Toolclip/Fusion360WrapSketch.png)
+![Image of Fusion360WrapSketch](./Toolclip/Fusion360WrapSketch.png)
 
 ## Limitations
 
