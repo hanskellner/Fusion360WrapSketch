@@ -48,6 +48,12 @@ def mapPoint2Curve(x, y, radius, xOrig, yOrig, zOrig):
     z2 = y + zOrig
     return x2, y2, z2
 
+# Hack to test coordinate values
+def equal_close(f1,f2,sig_digits):
+    return ( f1 == f2 or
+             int(f1 * 10 ** sig_digits) == int(f2 * 10 ** sig_digits)
+           )
+           
 def wrapSketch(cylSelInput, sketchSelInput):
     if cylSelInput == None or sketchSelInput == None or design == None:
         return
@@ -115,7 +121,7 @@ def wrapSketch(cylSelInput, sketchSelInput):
                 for ip in range(fitPoints.count):
                     pt = fitPoints.item(ip).geometry
                     # map the old point to cylinder
-                    xNew, yNew, zNew = mapPoint2Curve(pt.x * xScale, pt.y * yScale, cylGeom.radius + radiusOffset, cylGeom.origin.x, cylGeom.origin.y, 0)
+                    xNew, yNew, zNew = mapPoint2Curve(pt.x * xScale, pt.y * yScale, cylGeom.radius + radiusOffset, cylGeom.origin.x, cylGeom.origin.y, cylGeom.origin.z)
                     newFitPoints.add(adsk.core.Point3D.create(xNew, yNew, zNew)) #cylGeom.origin.z + zNew))  origin is in middle of cylinder.  Need to find length and offset.
 
                 # Create the spline.
@@ -136,29 +142,35 @@ def wrapSketch(cylSelInput, sketchSelInput):
                 ptStart = sketchCurve.startSketchPoint.geometry
                 ptEnd   = sketchCurve.endSketchPoint.geometry
                 
-                # map the points to cylinder
-                xStart, yStart, zStart = mapPoint2Curve(ptStart.x * xScale, ptStart.y * yScale, cylGeom.radius + radiusOffset, cylGeom.origin.x, cylGeom.origin.y, 0)
-                xEnd, yEnd, zEnd = mapPoint2Curve(ptEnd.x * xScale, ptEnd.y * yScale, cylGeom.radius + radiusOffset, cylGeom.origin.x, cylGeom.origin.y, 0)
-                
-                # Check for a vertical line which will just map to a line
-                if ptStart.x == ptEnd.x:
-                    lines = sketch.sketchCurves.sketchLines
-                    lines.addByTwoPoints(adsk.core.Point3D.create(xStart, yStart, zStart), adsk.core.Point3D.create(xEnd, yEnd, zEnd))
-                else:
-                    # mapping to a cylinder so create an arc
-                    xCtr, yCtr, zCtr = mapPoint2Curve(((ptStart.x + ptEnd.x) / 2.0) * xScale, ((ptStart.y + ptEnd.y) / 2.0) * yScale, cylGeom.radius + radiusOffset, cylGeom.origin.x, cylGeom.origin.y, 0)
+                if ptStart != ptEnd:
+                    # map the points to cylinder
+                    xStart, yStart, zStart = mapPoint2Curve(ptStart.x * xScale, ptStart.y * yScale, cylGeom.radius + radiusOffset, cylGeom.origin.x, cylGeom.origin.y, cylGeom.origin.z)
+                    xEnd, yEnd, zEnd = mapPoint2Curve(ptEnd.x * xScale, ptEnd.y * yScale, cylGeom.radius + radiusOffset, cylGeom.origin.x, cylGeom.origin.y, cylGeom.origin.z)
                     
-                    sketchArcs = sketch.sketchCurves.sketchArcs
-                    sketchArcs.addByThreePoints(adsk.core.Point3D.create(xStart, yStart, zStart),
-                                                adsk.core.Point3D.create(xCtr, yCtr, zCtr),
-                                                adsk.core.Point3D.create(xEnd, yEnd, zEnd))
+                    # Check for a vertical line which will just map to a line
+                    # NOTE: Hack for comparison. Needed because small rounding error will cause == to fail and
+                    # then creating arc call will fail when given vertical points.  So check for vertical and
+                    # almost vertical lines.
+                    if equal_close(ptStart.x, ptEnd.x, 6):
+                        lines = sketch.sketchCurves.sketchLines
+                        lines.addByTwoPoints(adsk.core.Point3D.create(xStart, yStart, zStart), adsk.core.Point3D.create(xEnd, yEnd, zEnd))
+                    else:
+                        # mapping to a cylinder so create an arc
+                        xCtr, yCtr, zCtr = mapPoint2Curve(((ptStart.x + ptEnd.x) / 2.0) * xScale, ((ptStart.y + ptEnd.y) / 2.0) * yScale, cylGeom.radius + radiusOffset, cylGeom.origin.x, cylGeom.origin.y, cylGeom.origin.z)
+                        
+                        sketchArcs = sketch.sketchCurves.sketchArcs
+                        sketchArcs.addByThreePoints(adsk.core.Point3D.create(xStart, yStart, zStart),
+                                                    adsk.core.Point3D.create(xCtr, yCtr, zCtr),
+                                                    adsk.core.Point3D.create(xEnd, yEnd, zEnd))
+                else:
+                    print('Found 0 Length Sketch Line')
                 
             elif obj_type == 'adsk::fusion::SketchPoint':
                 #print('SketchPoint')
                 pt = sketchCurve.geometry
                 
                 # map the point to cylinder
-                xNew, yNew, zNew = mapPoint2Curve(pt.x * xScale, pt.y * yScale, cylGeom.radius + radiusOffset, cylGeom.origin.x, cylGeom.origin.y, 0)
+                xNew, yNew, zNew = mapPoint2Curve(pt.x * xScale, pt.y * yScale, cylGeom.radius + radiusOffset, cylGeom.origin.x, cylGeom.origin.y, cylGeom.origin.z)
                 
                 sketchPoints = sketch.sketchPoints
                 sketchPoints.add(adsk.core.Point3D.create(xNew, yNew, zNew))
