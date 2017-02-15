@@ -1,5 +1,5 @@
 #Author-Hans Kellner
-#Description-Wrap a sketch around a cylinder
+#Description-Wrap a 2d sketch around a cylinder
 #
 # Assumes sketch is on XY plane and cylinder is oriented with axis aligned with Z up
 #
@@ -12,6 +12,8 @@ design = None
 commandId = 'Fusion360WrapSketch'
 commandName = 'Wrap Sketch'
 commandDescription = 'Wrap 2D sketch curves around a cylinder.'
+commandResources = './/Resources//Fusion360WrapSketch'
+commandToolClip = './/Toolclip//Fusion360WrapSketch.png'
 
 # Global set of event handlers to keep them referenced for the duration of the command
 handlers = []
@@ -21,6 +23,8 @@ sketch_selInput = None
 cylinder_selInput = None
 xscale_float_spinnerInput = None
 yscale_float_spinnerInput = None
+radiusOffset_float_spinnerInput = None
+thickenDepth_float_spinnerInput = None
 splitFace_boolinput = None
 
 def point3DStr(pt):
@@ -38,10 +42,10 @@ def getSketchCurvesBoundingBox():
 
     return bbox
 
-def mapPoint2Curve(x, y, radius):
-    x2 = radius * math.cos(x / radius)
-    y2 = radius * math.sin(x / radius)
-    z2 = y
+def mapPoint2Curve(x, y, radius, xOrig, yOrig, zOrig):
+    x2 = radius * math.cos(x / radius) + xOrig
+    y2 = radius * math.sin(x / radius) + yOrig
+    z2 = y + zOrig
     return x2, y2, z2
 
 def wrapSketch(cylSelInput, sketchSelInput):
@@ -59,6 +63,14 @@ def wrapSketch(cylSelInput, sketchSelInput):
     if yscale_float_spinnerInput != None:
         yScale = yscale_float_spinnerInput.value
 
+    radiusOffset = 0.1
+    if radiusOffset_float_spinnerInput != None:
+        radiusOffset = radiusOffset_float_spinnerInput.value
+
+    thickenDepth = 0.2
+    if thickenDepth_float_spinnerInput != None:
+        thickenDepth = thickenDepth_float_spinnerInput.value
+        
     # Creating a sketch will empty the selection input.  Cache the selected entities
     # so we don't lose access to them when new sketch created.
     sketchCurves = []
@@ -85,13 +97,13 @@ def wrapSketch(cylSelInput, sketchSelInput):
             obj_type = sketchCurve.objectType
 
             if obj_type == 'adsk::fusion::SketchArc':
-                print('SketchArc')
+                print('SketchArc : unsupported')
             elif obj_type == 'adsk::fusion::SketchCircle':
-                print('SketchCircle')
+                print('SketchCircle : unsupported')
             elif obj_type == 'adsk::fusion::SketchEllipse':
-                print('SketchEllipse')
+                print('SketchEllipse : unsupported')
             elif obj_type == 'adsk::fusion::SketchEllipticalArc':
-                print('SketchEllipticalArc')
+                print('SketchEllipticalArc : unsupported')
             elif obj_type == 'adsk::fusion::SketchFittedSpline':
                 #print('SketchFittedSpline')
                 # Get this splines points
@@ -103,8 +115,8 @@ def wrapSketch(cylSelInput, sketchSelInput):
                 for ip in range(fitPoints.count):
                     pt = fitPoints.item(ip).geometry
                     # map the old point to cylinder
-                    xNew, yNew, zNew = mapPoint2Curve(pt.x * xScale, pt.y * yScale, cylGeom.radius)
-                    newFitPoints.add(adsk.core.Point3D.create(cylGeom.origin.x + xNew, cylGeom.origin.y + yNew, zNew)) #cylGeom.origin.z + zNew))  origin is in middle of cylinder.  Need to find length and offset.
+                    xNew, yNew, zNew = mapPoint2Curve(pt.x * xScale, pt.y * yScale, cylGeom.radius + radiusOffset, cylGeom.origin.x, cylGeom.origin.y, 0)
+                    newFitPoints.add(adsk.core.Point3D.create(xNew, yNew, zNew)) #cylGeom.origin.z + zNew))  origin is in middle of cylinder.  Need to find length and offset.
 
                 # Create the spline.
                 newFittedSpline = sketch.sketchCurves.sketchFittedSplines.add(newFitPoints)
@@ -116,32 +128,87 @@ def wrapSketch(cylSelInput, sketchSelInput):
                     splitToolObjCol.add(newFittedSpline)
 
             elif obj_type == 'adsk::fusion::SketchFixedSpline':
-                print('SketchFixedSpline')
+                print('SketchFixedSpline : unsupported')
                 # TODO Convert fixed to fitted spline
             elif obj_type == 'adsk::fusion::SketchLine':
-                print('SketchLine')
-                # TODO Convert line to arc on cylinder face
+                #print('SketchLine')
+                # Convert line to arc on cylinder face
+                ptStart = sketchCurve.startSketchPoint.geometry
+                ptEnd   = sketchCurve.endSketchPoint.geometry
+                
+                # map the points to cylinder
+                xStart, yStart, zStart = mapPoint2Curve(ptStart.x * xScale, ptStart.y * yScale, cylGeom.radius + radiusOffset, cylGeom.origin.x, cylGeom.origin.y, 0)
+                xEnd, yEnd, zEnd = mapPoint2Curve(ptEnd.x * xScale, ptEnd.y * yScale, cylGeom.radius + radiusOffset, cylGeom.origin.x, cylGeom.origin.y, 0)
+                
+                # Check for a vertical line which will just map to a line
+                if ptStart.x == ptEnd.x:
+                    lines = sketch.sketchCurves.sketchLines
+                    lines.addByTwoPoints(adsk.core.Point3D.create(xStart, yStart, zStart), adsk.core.Point3D.create(xEnd, yEnd, zEnd))
+                else:
+                    # mapping to a cylinder so create an arc
+                    xCtr, yCtr, zCtr = mapPoint2Curve(((ptStart.x + ptEnd.x) / 2.0) * xScale, ((ptStart.y + ptEnd.y) / 2.0) * yScale, cylGeom.radius + radiusOffset, cylGeom.origin.x, cylGeom.origin.y, 0)
+                    
+                    sketchArcs = sketch.sketchCurves.sketchArcs
+                    sketchArcs.addByThreePoints(adsk.core.Point3D.create(xStart, yStart, zStart),
+                                                adsk.core.Point3D.create(xCtr, yCtr, zCtr),
+                                                adsk.core.Point3D.create(xEnd, yEnd, zEnd))
+                
             elif obj_type == 'adsk::fusion::SketchPoint':
-                print('SketchPoint')
+                #print('SketchPoint')
+                pt = sketchCurve.geometry
+                
+                # map the point to cylinder
+                xNew, yNew, zNew = mapPoint2Curve(pt.x * xScale, pt.y * yScale, cylGeom.radius + radiusOffset, cylGeom.origin.x, cylGeom.origin.y, 0)
+                
+                sketchPoints = sketch.sketchPoints
+                sketchPoints.add(adsk.core.Point3D.create(xNew, yNew, zNew))
             else:
                 print('Sketch type unsupported: ' + obj_type)
 
         # Split the face with curves?
         if splitFace_boolinput != None and splitFace_boolinput.value:
-            # Get SplitFaceFeatures
-            splitFaceFeats = rootComp.features.splitFaceFeatures
 
-            # Set faces to split
-            objCol = adsk.core.ObjectCollection.create()
-            objCol.add(cylFace)
+            # TODO : Split API doesn't allow setting Split Type with API.  Use patches for now.
+#==============================================================================
+#             # Get SplitFaceFeatures
+#             splitFaceFeats = rootComp.features.splitFaceFeatures
+# 
+#             # Set faces to split
+#             objCol = adsk.core.ObjectCollection.create()
+#             objCol.add(cylFace)
+# 
+#             # Create SplitFaceFeatureInput
+#             splitFaceInput = splitFaceFeats.createInput(objCol, splitToolObjCol, True)
+#             #splitFaceInput.splittingTool = splitToolObjCol
+# 
+#             # Create split face feature
+#             splitFaceFeats.add(splitFaceInput)
+#==============================================================================
 
-            # Create SplitFaceFeatureInput
-            splitFaceInput = splitFaceFeats.createInput(objCol, splitToolObjCol, True)
-            #splitFaceInput.splittingTool = splitToolObjCol
+            # Create patches for each of the curves. Then thicken the patches
+            # to create new bodies. 
+            patches = rootComp.features.patchFeatures
+            newPatches = []
+            
+            for iCurve in range(splitToolObjCol.count):
+                curve = splitToolObjCol.item(iCurve)
+                patchInput = patches.createInput(curve, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                newPatch = patches.add(patchInput)
+                if newPatch != None:
+                    newPatches.append(newPatch)
+                    
+            # Thicken patch features
+            thickenFeatures = rootComp.features.thickenFeatures
+            for aPatch in newPatches:
+                bodies = aPatch.bodies
+                inputSurfaces = adsk.core.ObjectCollection.create()
+                for body in bodies:
+                    inputSurfaces.add(body)
 
-            # Create split face feature
-            splitFaceFeats.add(splitFaceInput)
-
+                thickness = adsk.core.ValueInput.createByReal(thickenDepth)
+                thickenInput = thickenFeatures.createInput(inputSurfaces, thickness, False,  adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                thickenFeatures.add(thickenInput)
+        
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
@@ -249,17 +316,25 @@ class MyCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             global sketch_selInput
             sketch_selInput = inputs.addSelectionInput(commandId + '_sketch_selection', 'Select sketch curves', 'Select sketch curves')
             sketch_selInput.setSelectionLimits(1,0)
-            sketch_selInput.addSelectionFilter('SketchCurves')
+            sketch_selInput.addSelectionFilter('SketchCurves') # includes lines and splines
+            sketch_selInput.addSelectionFilter('SketchPoints')
 
             # Create float spinner input
             global xscale_float_spinnerInput
-            global yscale_float_spinnerInput
             xscale_float_spinnerInput = inputs.addFloatSpinnerCommandInput(commandId + '_scaleX_spinnerFloat', 'X Scale', 'cm', 0.01 , 10.0 , 0.25, 1)
+            
+            global yscale_float_spinnerInput
             yscale_float_spinnerInput = inputs.addFloatSpinnerCommandInput(commandId + '_scaleY_spinnerFloat', 'Y Scale', 'cm', 0.01 , 10.0 , 0.25, 1)
-
+            
             global splitFace_boolinput
             splitFace_boolinput = inputs.addBoolValueInput(commandId + '_splitFace', 'Split Cylinder Face', True, '', False) # TODO: No way to set Split Type with API.  Needed for splits to work.
 
+            global radiusOffset_float_spinnerInput
+            radiusOffset_float_spinnerInput = inputs.addFloatSpinnerCommandInput(commandId + '_radiusOffset_spinnerFloat', 'Radius Offset', 'cm', -100.0 , 100.0 , 0.1, 0.1)
+
+            global thickenDepth_float_spinnerInput
+            thickenDepth_float_spinnerInput = inputs.addFloatSpinnerCommandInput(commandId + '_thickenDepth_spinnerFloat', 'Thicken Depth', 'cm', -100.0 , 100.0 , 0.1, 0.2)
+            
         except:
             if ui:
                 ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
@@ -277,7 +352,8 @@ def run(context):
         # Create command definition
         cmdDef = ui.commandDefinitions.itemById(commandId)
         if not cmdDef:
-            cmdDef = ui.commandDefinitions.addButtonDefinition(commandId, commandName, commandDescription)
+            cmdDef = ui.commandDefinitions.addButtonDefinition(commandId, commandName, commandDescription, commandResources)
+            commandDef.toolClipFilename = commandToolClip
 
         # Add command created event
         onCommandCreated = MyCommandCreatedHandler()
@@ -285,6 +361,17 @@ def run(context):
         # Keep the handler referenced beyond this function
         handlers.append(onCommandCreated)
 
+        
+        # Get the ADD-INS panel in the model workspace. 
+        addInsPanel = ui.allToolbarPanels.itemById('SolidScriptsAddinsPanel')
+
+        # Add the button to the bottom.
+        buttonControl = addInsPanel.controls.addCommand(cmdDef)
+
+        # Make the button available in the panel.
+        buttonControl.isPromotedByDefault = True
+        buttonControl.isPromoted = True        
+        
         # Execute command
         cmdDef.execute()
 
@@ -302,6 +389,20 @@ def stop(context):
         ui  = app.userInterface
         #ui.messageBox('Stop addin')
 
+        cmdDefs = ui.commandDefinitions
+
+        # Delete the button definition.
+        cmdDef = ui.commandDefinitions.itemById(commandId)
+        if cmdDef:
+            cmdDef.deleteMe()
+
+        # Get panel the control is in.
+        addInsPanel = ui.allToolbarPanels.itemById('SolidScriptsAddinsPanel')
+
+        # Get and delete the button control.
+        buttonControl = addInsPanel.controls.itemById(commandId)
+        if buttonControl:
+            buttonControl.deleteMe()
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
