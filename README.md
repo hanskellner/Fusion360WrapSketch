@@ -18,4 +18,4 @@ Only sketch splines are wrapped.  Further types will be added.
 
 ## License
 
-Licensed under the terms of the [MIT License](http://opensource.org/licenses/MIT). Please see the [LICENSE](https://github.com/tapnair/stateSaver/blob/master/LICENSE) file for full details.
+Licensed under the terms of the [MIT License](http://opensource.org/licenses/MIT). Please see the [LICENSE](https://github.com/hanskellner/Fusion360WrapSketch/blob/master/LICENSE.md) file for full details.
