@@ -8,13 +8,22 @@ This script is used to wrap 2D sketch curves around a cylinder.
 
 See the Autodesk Fusion 360 installation steps: https://rawgit.com/AutodeskFusion360/AutodeskFusion360.github.io/master/Installation.html
 
+## Video
+
+Screencast video showing the add-in being used:
+
+https://knowledge.autodesk.com/support/fusion-360/getting-started/caas/screencast/Main/Details/c2921883-270c-48ef-93ab-51234b88ee0a.html
+
 ## Limitations
 
-Currently a work in progress.
+- The sketch curves must be contained on the XY plane.
+- The cylinder must be oriented with its axis aligned with the Z axis.
+- Support sketch geometry:
+ - Points
+ - Lines
+ - Splines
 
-The sketch curves must be contained on the XY plane.  The cylinder must be oriented with its axis aligned with the Z axis.
-
-Only sketch splines are wrapped.  Further types will be added.
+This add-in is a work-in-progress.  I hope to add new sketch geometry types soon.  Circles and arcs are two that I would like to add next.
 
 ## License
 
