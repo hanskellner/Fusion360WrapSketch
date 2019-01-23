@@ -2,9 +2,9 @@
 
 This script is used to wrap 2D sketch curves around a cylinder.
 
-*NOTE* This addin was created before the Sheet Metal support was added to Fusion 360.  With that functionality it is now possible and easier to wrap sketch geometry.  See the following video for an example: https://youtu.be/xN5uqSyG6YA
-
 ![Image of Fusion360WrapSketch](./Toolclip/Fusion360WrapSketch.png)
+
+*NOTE* This addin was created before the Sheet Metal support was added to Fusion 360.  With that functionality it is now possible and easier to wrap sketch geometry.  See the following video for an example: https://youtu.be/xN5uqSyG6YA
 
 ## Installation
 
